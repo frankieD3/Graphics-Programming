@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+   "settings": {
+        "C_Cpp.default.intelliSenseMode": "windows-clang-x64",
+        "C_Cpp.default.includePath": [
+            "${workspaceFolder}/Include",
+            "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Libraries\\glfw-3.4.bin.WIN64\\include",
+            "C:\\Program Files\\VulkanSDK\\include",
+            "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Libraries\\glm-1.0.1",
+            "${env:VULKAN_SDK}/Include"
+        ]
+    }
+
+
+
+
+
+
+}

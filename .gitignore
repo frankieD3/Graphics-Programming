@@ -1,0 +1,11 @@
+# ignore local build directories
+bulid/*
+build-cmake/
+
+# ignore obj files
+*.ilk
+*.obj
+*.pdb
+
+# other local files
+vulkaninfo.html

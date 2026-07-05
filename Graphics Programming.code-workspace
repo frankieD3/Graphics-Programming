@@ -7,17 +7,22 @@
    "settings": {
         "C_Cpp.default.intelliSenseMode": "windows-clang-x64",
         "C_Cpp.default.includePath": [
-            "${workspaceFolder}/Include",
             "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Libraries\\glfw-3.4.bin.WIN64\\include",
             "C:\\Program Files\\VulkanSDK\\include",
             "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Libraries\\glm-1.0.1",
             "${env:VULKAN_SDK}/Include"
+        ],
+        "c-cpp-flylint.debug": false,
+        "c-cpp-flylint.standard": [
+            "c23",
+            "c++23"
+        ],
+        "c-cpp-flylint.excludeFromWorkspacePaths": [
+            "${workspaceFolder}\\build\\_deps\\microsoft-gsl-src\\gsl",
+            "${workspaceFolder}\\build-cmake\\_deps\\microsoft-gsl-src\\gsl"
         ]
+            
     }
-
-
-
-
 
 
 }

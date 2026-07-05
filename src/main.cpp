@@ -1,8 +1,8 @@
-#include <GLFW/glfw3.h>
+#include "precomp.h"
 #include "glfw_initialization.h"
 #include "glfw_monitor.h"
 #include "glfw_window.h"
-#include <precomp.h>
+#include "graphics.h"
 
 
 std::int32_t main(std::int32_t argc, gsl::zstring* argv[]) {
@@ -12,9 +12,7 @@ std::int32_t main(std::int32_t argc, gsl::zstring* argv[]) {
     veng::Window window("Vulkan Engine",
                         {800, 600});
 
-    //gsl::final_action _cleanup_window([&window] {
-        //glfwDestroyWindow(window.GetHandle());
-    //});
+    veng::Graphics graphics(&window);
 
     // Get the list of monitors and their count
     //

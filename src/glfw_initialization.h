@@ -1,10 +1,11 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
+#include "precomp.h"
 
 namespace veng {
     
     struct GLFWInitialization {
+      public:
         GLFWInitialization(); 
 
         ~GLFWInitialization();

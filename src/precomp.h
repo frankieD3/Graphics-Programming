@@ -1,10 +1,12 @@
 #pragma once
 
 #include <cmath>
-#include <gsl/gsl>
-#include <cstdlib>
 #include <cstdint>
-#include <GLFW/glfw3.h>
+#include <cstdlib>
+#include <gsl/gsl>
 #include <string>
 #include <string_view>
 #include <glm/glm.hpp>
+#include <GLFW/glfw3.h>
+#include "utilities.h"
+#include <functional>

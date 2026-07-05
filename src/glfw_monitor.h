@@ -1,8 +1,6 @@
 #pragma once
 
-#include <gsl/gsl>
-#include <glm/glm.hpp>
-#include <GLFW/glfw3.h>
+#include "precomp.h"
 
 struct GLFWmonitor;
 

@@ -1,8 +1,6 @@
 #pragma once
-#include <string_view>
-#include <glm/vec2.hpp>
-#include <gsl/gsl>
-#include <precomp.h>
+
+#include "precomp.h"
 
 struct GLFWwindow;
 

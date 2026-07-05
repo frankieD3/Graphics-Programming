@@ -14,6 +14,20 @@
 				"$msCompile"
 			],
 			"group": "build"
-		}
+		},
+		{
+			"label": "build-debug",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"build"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
 	]
 }

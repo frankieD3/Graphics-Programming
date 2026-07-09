@@ -1,15 +1,14 @@
 {
-	"folders": [
-		{
-			"path": "."
-		}
-	],
-   "settings": {
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
         "C_Cpp.default.intelliSenseMode": "windows-clang-x64",
         "C_Cpp.default.includePath": [
-            "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Libraries\\glfw-3.4.bin.WIN64\\include",
-            "C:\\Program Files\\VulkanSDK\\include",
-            "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Libraries\\glm-1.0.1",
+            "C:/Program Files/Microsoft Visual Studio/18/Community/Libraries/glfw-3.4.bin.WIN64/include",
+            "C:/Program Files/Microsoft Visual Studio/18/Community/Libraries/glm-1.0.2",
             "${env:VULKAN_SDK}/Include"
         ],
         "c-cpp-flylint.debug": false,
@@ -17,11 +16,25 @@
             "c23",
             "c++23"
         ],
+        "c-cpp-flylint.cppcheck.standard": [
+            "c++20"
+        ],
+        "json.format.enable": true,
+
+        "c-cpp-flylint.includePaths": [
+            "${workspaceFolder}\\build\\_deps\\microsoft-gsl-src\\include",
+            "${workspaceFolder}\\src",
+            "C:/Program Files/Microsoft Visual Studio/18/Community/Libraries/glfw-3.4.bin.WIN64/include",
+            "${VULKAN_SDK}\\Include",
+        ],
         "c-cpp-flylint.excludeFromWorkspacePaths": [
             "${workspaceFolder}\\build\\_deps\\microsoft-gsl-src\\gsl",
             "${workspaceFolder}\\build-cmake\\_deps\\microsoft-gsl-src\\gsl"
-        ]
-            
+        ],
+        "c-cpp-flylint.cppcheck.enable": false,
+        "c-cpp-flylint.clang.enable": false,
+        "C_Cpp.clang_format_sortIncludes": true,
+        "todo-tree.tree.sortTagsOnlyViewAlphabetically": true,
     }
 
 

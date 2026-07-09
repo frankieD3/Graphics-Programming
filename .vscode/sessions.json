@@ -7,50 +7,14 @@
     "sessions": {
         "default": [
             {
-                "name": "hello",
+                "name": "vulkan",
                 "autoExecuteCommands": true,
                 "icon": "person",
-                "color": "terminal.ansiGreen",
+                "color": "terminal.blue",
                 "commands": [
                     "echo hello"
                 ]
-            },
-            [
-                {
-                    "name": "docker:ros",
-                    "commands": [
-                        ""
-                    ]
-                },
-                {
-                    "name": "docker:k8s",
-                    "commands": [
-                        ""
-                    ]
-                }
-            ],
-            [
-                {
-                    "name": "docker:nats",
-                    "commands": [
-                        ""
-                    ]
-                },
-                {
-                    "name": "docker:fleet",
-                    "commands": [
-                        ""
-                    ]
-                }
-            ]
-        ],
-        "saved-session": [
-            {
-                "name": "connect",
-                "commands": [
-                    ""
-                ]
             }
         ]
-    }
-}
+            }
+        }

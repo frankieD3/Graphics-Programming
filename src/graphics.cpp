@@ -301,6 +301,154 @@ namespace veng {
     }
 
 
+    #pragma region DEVICE_AND_QUEUES
+
+    bool Graphics::IsDeviceSuitable(VkPhysicalDevice device) {
+        // Check if the device supports the required queue families (graphics, compute, etc.)
+        //
+        VkPhysicalDeviceProperties device_properties;
+        vkGetPhysicalDeviceProperties(device,
+                                      &device_properties);
+        VkPhysicalDeviceFeatures device_features;
+        vkGetPhysicalDeviceFeatures(device,
+                                    &device_features);
+        QueueFamilyIndices indices = FindQueueFamilies(device);
+        if (!indices.IsValid()) {
+            return false;
+        }
+        return true;
+    }
+
+void Graphics::PickPhysicalDevice() {
+/// PickPhysicalDevice picks a physical device that supports the required features and extensions
+/// It also checks if the device supports the required queue families (graphics, compute, etc.)
+///
+
+    std::vector<VkPhysicalDevice> devices = GetAvailablePhysicalDevices(instance_);
+
+    if (devices.empty()) {
+      spdlog::error("No physical devices that support Vulkan");
+      std::exit(EXIT_FAILURE);
+    }
+
+    std::erase_if(devices, std::not_fn(std::bind_front(&Graphics::IsDeviceSuitable, this)));
+
+    // score devices and pick the best one
+    // For now we just pick the first one, but we could implement a scoring system to pick the best one
+
+    physical_device_ = devices.front();
+
+    for(VkPhysicalDevice device : devices) {
+        VkPhysicalDeviceProperties device_properties;
+        vkGetPhysicalDeviceProperties(device, &device_properties);
+        spdlog::info("Found suitable device: {}", device_properties.deviceName);
+    }   
+}
+
+std::vector<VkPhysicalDevice> Graphics::GetAvailablePhysicalDevices(VkInstance instance) {
+/// GetAvailablePhysicalDevices returns the list of available physical devices for 
+/// a given Vulkan instance
+/// @param instance 
+/// @return list of available physical devices
+///
+  std::uint32_t device_count = 0;
+  vkEnumeratePhysicalDevices(instance,
+                             &device_count,
+                             nullptr);
+
+  if (device_count == 0) {
+    return {};
+  }
+
+  std::vector<VkPhysicalDevice> devices(device_count);
+
+  vkEnumeratePhysicalDevices(instance,
+                             &device_count,
+                             devices.data());
+
+  return devices;
+
+}
+//////////////////////
+
+Graphics::QueueFamilyIndices Graphics::FindQueueFamilies(VkPhysicalDevice device) {
+  std::uint32_t queue_family_count = 0;
+  vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, nullptr);
+
+  if (queue_family_count == 0) {
+    return {};
+  }
+
+  std::vector<VkQueueFamilyProperties> families(queue_family_count);
+  vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, families.data());
+
+  auto graphics_family_it = std::find_if(families.begin(), families.end(),
+                                         [](const VkQueueFamilyProperties& family) {
+                                           return family.queueFlags & VK_QUEUE_GRAPHICS_BIT;
+                                         });
+
+  if (graphics_family_it == families.end()) {
+    return {};
+  }
+
+    QueueFamilyIndices indices;
+    indices.graphics_family = static_cast<std::uint32_t>(std::distance(families.begin(), graphics_family_it));  
+
+    return indices;
+}
+
+void Graphics::CreateLogicalDeviceandQueues() {
+    // Create a logical device and the required queues (graphics, compute, etc.)
+    //
+    QueueFamilyIndices picked_device_families = FindQueueFamilies(physical_device_);
+
+    if(!picked_device_families.IsValid()) {
+        spdlog::error("Physical device does not have the required queue families");
+        std::exit(EXIT_FAILURE);
+    }
+    
+    VkDeviceQueueCreateInfo queue_create_info{};
+    queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queue_create_info.queueFamilyIndex = picked_device_families.graphics_family.value();
+    queue_create_info.queueCount = 1;
+    std::float_t queue_priority = 1.0f;
+    queue_create_info.pQueuePriorities = &queue_priority;
+
+    VkPhysicalDeviceFeatures device_features{};
+
+    VkDeviceCreateInfo device_create_info{};
+    device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    device_create_info.queueCreateInfoCount = 1;
+    device_create_info.pQueueCreateInfos = &queue_create_info;
+    device_create_info.pEnabledFeatures = &device_features;
+    device_create_info.enabledExtensionCount = 0;
+    device_create_info.enabledLayerCount = 0;   // Deprecated in Vulkan 1.0, ignored in later versions
+    
+    VkResult result = vkCreateDevice(physical_device_,
+                                     &device_create_info,
+                                     nullptr,
+                                     &logical_device_);
+    if (result != VK_SUCCESS) {
+        spdlog::error("Failed to create logical device");
+        std::exit(EXIT_FAILURE);    
+
+    }
+
+    vkGetDeviceQueue(logical_device_, 
+                        picked_device_families.graphics_family.value(),
+                        0,
+                        &graphics_queue_);
+
+}
+
+
+
+
+    
+
+#pragma endregion // DEVICE_AND_QUEUES
+
+                                           
 
 
 }  // namespace veng 

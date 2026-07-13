@@ -222,10 +222,18 @@ namespace veng {
     }
 
     Graphics::~Graphics() {
+        // Clean up Vulkan resources
+        // Order of destruction:
+        // 1. Logical device                                                                                                    
+        if(logical_device_ != VK_NULL_HANDLE) {
+            vkDestroyDevice(logical_device_, nullptr);
+        }
+        // 2. Debug messenger
         if (instance_ != VK_NULL_HANDLE) {
             if (debug_messenger_ != VK_NULL_HANDLE) {
                 vkDestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
             }
+        // 3. Vulkan instance
         vkDestroyInstance(instance_,
                           nullptr);
         }

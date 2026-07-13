@@ -4,6 +4,7 @@
 #include "glfw_window.h"
 #include <vulkan/vulkan.h>
 #include <iostream>
+#include <optional>
 
 namespace veng {
     

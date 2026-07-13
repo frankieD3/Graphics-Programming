@@ -29,6 +29,21 @@ namespace veng {
 
         VkDebugUtilsMessengerEXT debug_messenger_ = VK_NULL_HANDLE;
 
+        VkPhysicalDevice physical_device_ = VK_NULL_HANDLE;
+
+        struct QueueFamilyIndices{
+            std::optional<std::uint32_t> graphics_family = std::nullopt;
+            std::optional<std::uint32_t> presentation_family = std::nullopt;
+
+            bool IsValid() const {
+                return graphics_family.has_value() /*&& presentation_family.has_value() */;
+            }   
+        };
+
+        VkDevice logical_device_ = VK_NULL_HANDLE;
+
+        VkQueue graphics_queue_ = VK_NULL_HANDLE;
+
 // private methods
 //
 
@@ -66,6 +81,18 @@ namespace veng {
         static std::vector<VkLayerProperties> GetSupportedValidationLayers();
 
         static bool AreAllValidationLayersSupported(gsl::span<gsl::czstring> validation_layers); 
+
+        // Physical and logical device
+        //
+        void PickPhysicalDevice();
+
+        std::vector<VkPhysicalDevice> GetAvailablePhysicalDevices(VkInstance instance);    
+
+        bool IsDeviceSuitable(VkPhysicalDevice device);
+
+        QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
+
+        void CreateLogicalDeviceandQueues();
 
         // Debug messenger
         //

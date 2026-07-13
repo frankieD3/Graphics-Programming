@@ -243,6 +243,7 @@ namespace veng {
         if (validation_enabled_) {
             SetupDebugMessenger();
         }
+        PickPhysicalDevice();
     }
 
     //  Creates a Vulkan instance with the required extensions

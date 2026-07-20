@@ -10,3 +10,7 @@ build-cmake/
 # other local files
 vulkaninfo.html
 build/
+
+html/
+
+latex/

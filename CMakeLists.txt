@@ -13,6 +13,9 @@ endif()
 
 find_package(Vulkan REQUIRED)
 
+include(cmake/Shaders.cmake)
+include(FetchContent)
+
 include(FetchContent)
 fetchcontent_declare(
     glm
@@ -60,3 +63,11 @@ target_include_directories(VulkanEngine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src
 target_compile_features(VulkanEngine PRIVATE cxx_std_20)
 
 target_precompile_headers(VulkanEngine PRIVATE "${CMAKE_SOURCE_DIR}/src/precomp.h")
+
+file(GLOB_RECURSE ShaderSources CONFIGURE_DEPENDS
+	"${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.vert"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.frag"
+)
+
+add_shaders(VulkanEngineShaders ${ShaderSources})
+add_dependencies(VulkanEngine VulkanEngineShaders)

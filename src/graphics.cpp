@@ -213,6 +213,26 @@ namespace veng {
         // Order of destruction:
         // 1. Logical device                                                                                                    
         if (logical_device_ != VK_NULL_HANDLE) {
+            if (graphics_pipeline_ != VK_NULL_HANDLE) {
+                vkDestroyPipeline(logical_device_,
+                                  graphics_pipeline_,
+                                  nullptr);
+            }
+            if (pipeline_layout_ != VK_NULL_HANDLE) {
+                vkDestroyPipelineLayout(logical_device_,
+                                        pipeline_layout_,
+                                        nullptr);
+            }
+            if (render_pass_ != VK_NULL_HANDLE) {
+                vkDestroyRenderPass(logical_device_,
+                                    render_pass_,
+                                    nullptr);
+            }
+            if (graphics_pipeline_ != VK_NULL_HANDLE) {
+                vkDestroyPipeline(logical_device_,
+                                  graphics_pipeline_,
+                                  nullptr);
+            }
             for (auto image_view : swap_chain_image_views_) {
                 vkDestroyImageView(logical_device_,
                                    image_view,
@@ -260,6 +280,9 @@ namespace veng {
         PickPhysicalDevice();
         CreateLogicalDeviceandQueues();
         CreateSwapChain();
+        //CreateImageViews();
+        CreateRenderPass();
+        CreateGraphicsPipeline();
 
     }
 
@@ -732,7 +755,7 @@ namespace veng {
                 spdlog::error("Failed to create image view for swap chain image {}", i);
                 std::exit(EXIT_FAILURE);
             }
-            std::next(image_view_it);
+            std::advance(image_view_it, 1);
         }
     }
 
@@ -852,5 +875,255 @@ namespace veng {
 
 
 #pragma endregion // PRESENTATION
+
+#pragma region GRAPHICS PIPELINE
+    /// @brief Creates the graphics pipeline, including shader stages, viewport, and scissor state.
+
+    void Graphics::CreateGraphicsPipeline() {
+
+        // | 1 | Read and create shader modules for the vertex and fragment shaders
+        //
+        // Vertex shader
+        //
+        std::vector<std::uint8_t> vertex_shader_code = ReadFile("./Shaders/basic.vert.spv");
+        VkShaderModule vertex_shader_module = CreateShaderModule(vertex_shader_code);
+        gsl::final_action _destroy_vertex_shader_module([&]() {
+            vkDestroyShaderModule(logical_device_,
+                                  vertex_shader_module,
+                                  nullptr);
+        });
+        // Fragment shader
+        //
+        std::vector<std::uint8_t> fragment_shader_code = ReadFile("./Shaders/basic.frag.spv");
+        VkShaderModule fragment_shader_module = CreateShaderModule(fragment_shader_code);
+        gsl::final_action _destroy_fragment_shader_module([&]() {
+            vkDestroyShaderModule(logical_device_,
+                                  fragment_shader_module,
+                                  nullptr);
+        });
+        if (vertex_shader_module == VK_NULL_HANDLE || fragment_shader_module == VK_NULL_HANDLE) {
+            spdlog::error("Failed to create shader modules");
+            std::exit(EXIT_FAILURE);
+        }
+
+        VkPipelineShaderStageCreateInfo vert_shader_stage_info = {};
+        vert_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+        vert_shader_stage_info.module = vertex_shader_module;
+        vert_shader_stage_info.pName = "main";
+
+        VkPipelineShaderStageCreateInfo frag_shader_stage_info = {};
+        frag_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        frag_shader_stage_info.module = fragment_shader_module;
+        frag_shader_stage_info.pName = "main";
+
+        std::array<VkPipelineShaderStageCreateInfo, 2> shader_stages = { vert_shader_stage_info,
+                                                                         frag_shader_stage_info };
+
+        // | 2 | Set up dynamic state for the pipeline
+        //
+        std::array<VkDynamicState, 2> dynamic_states = {
+            VK_DYNAMIC_STATE_VIEWPORT,
+            VK_DYNAMIC_STATE_SCISSOR
+        };
+
+        // Dynamic state info for the pipeline
+        //
+        VkPipelineDynamicStateCreateInfo dynamic_state_info = {};
+        dynamic_state_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        dynamic_state_info.dynamicStateCount = static_cast<std::uint32_t>(dynamic_states.size());
+        dynamic_state_info.pDynamicStates = dynamic_states.data();
+
+        // | 3 | Set up viewport and scissor state for the pipeline
+        //
+        VkViewport viewport = {};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = static_cast<std::float_t>(swap_chain_extent_.width);
+        viewport.height = static_cast<std::float_t>(swap_chain_extent_.height);
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+
+        VkRect2D scissor = {};
+        scissor.offset = { 0, 0 };
+        scissor.extent = swap_chain_extent_;
+
+        VkPipelineViewportStateCreateInfo viewport_state_info = {};
+        viewport_state_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        viewport_state_info.viewportCount = 1;
+        viewport_state_info.pViewports = &viewport;
+        viewport_state_info.scissorCount = 1;
+        viewport_state_info.pScissors = &scissor;
+
+
+        // | 4 | Set up vertex input state and rasterization state for the pipeline 
+        //
+        VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
+        vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        vertex_input_info.vertexBindingDescriptionCount = 0;
+        vertex_input_info.pVertexBindingDescriptions = nullptr;
+        vertex_input_info.vertexAttributeDescriptionCount = 0;
+        vertex_input_info.pVertexAttributeDescriptions = nullptr;
+
+        VkPipelineInputAssemblyStateCreateInfo input_assembly_info = {};
+        input_assembly_info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+        input_assembly_info.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        input_assembly_info.primitiveRestartEnable = VK_FALSE;
+
+        VkPipelineRasterizationStateCreateInfo rasterization_state_info = {};
+        rasterization_state_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+        rasterization_state_info.depthClampEnable = VK_FALSE;
+        rasterization_state_info.rasterizerDiscardEnable = VK_FALSE;
+        rasterization_state_info.polygonMode = VK_POLYGON_MODE_FILL;
+        rasterization_state_info.lineWidth = 1.0f;
+        rasterization_state_info.cullMode = VK_CULL_MODE_NONE;
+        rasterization_state_info.frontFace = VK_FRONT_FACE_CLOCKWISE;
+        rasterization_state_info.depthBiasEnable = VK_FALSE;
+
+
+        // | 5 | Set up multisample state for the pipeline
+        //  
+        VkPipelineMultisampleStateCreateInfo multisample_state_info = {};
+        multisample_state_info.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        multisample_state_info.sampleShadingEnable = VK_FALSE;
+        multisample_state_info.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+        multisample_state_info.pSampleMask = nullptr;
+
+        // | 6 | Set up color blend state for the pipeline
+        //
+        VkPipelineColorBlendStateCreateInfo color_blend_state_info = {};
+        color_blend_state_info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        color_blend_state_info.logicOpEnable = VK_FALSE;
+        //color_blend_state_info.logicOp = VK_LOGIC_OP_COPY;
+        color_blend_state_info.attachmentCount = 1;
+
+        VkPipelineColorBlendAttachmentState color_blend_attachment = {};
+        color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT |
+            VK_COLOR_COMPONENT_G_BIT |
+            VK_COLOR_COMPONENT_B_BIT |
+            VK_COLOR_COMPONENT_A_BIT;
+        color_blend_attachment.blendEnable = VK_FALSE;
+        color_blend_state_info.pAttachments = &color_blend_attachment;
+
+        // | 7 | Set up pipeline layout for the pipeline
+        //
+        VkPipelineLayoutCreateInfo pipeline_layout_info = {};
+        pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipeline_layout_info.setLayoutCount = 0;
+        pipeline_layout_info.pSetLayouts = nullptr;
+        pipeline_layout_info.pushConstantRangeCount = 0;
+        pipeline_layout_info.pPushConstantRanges = nullptr;
+
+        if (vkCreatePipelineLayout(logical_device_,
+            &pipeline_layout_info,
+            nullptr,
+            &pipeline_layout_) != VK_SUCCESS) {
+            spdlog::error("Failed to create pipeline layout");
+            std::exit(EXIT_FAILURE);
+        }
+
+        VkGraphicsPipelineCreateInfo pipeline_info = {};
+        pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipeline_info.stageCount = shader_stages.size();       // 2 for Vertex and Fragment shaders
+        pipeline_info.pStages = shader_stages.data();
+        pipeline_info.pVertexInputState = &vertex_input_info;
+        pipeline_info.pInputAssemblyState = &input_assembly_info;
+        pipeline_info.pViewportState = &viewport_state_info;
+        pipeline_info.pRasterizationState = &rasterization_state_info;
+        pipeline_info.pMultisampleState = &multisample_state_info;
+        pipeline_info.pDepthStencilState = nullptr;  // Optional, no depth/stencil buffer used
+        pipeline_info.pColorBlendState = &color_blend_state_info;
+        pipeline_info.pDynamicState = &dynamic_state_info;
+        pipeline_info.layout = pipeline_layout_;
+        pipeline_info.renderPass = render_pass_;
+        pipeline_info.subpass = 0;
+
+        if (vkCreateGraphicsPipelines(logical_device_,
+            VK_NULL_HANDLE,
+            1,
+            &pipeline_info,
+            nullptr,
+            &graphics_pipeline_) != VK_SUCCESS) {
+            spdlog::error("Failed to create graphics pipeline");
+            std::exit(EXIT_FAILURE);
+        }
+
+
+
+    }
+
+
+    /// @brief Creates a shader module from the given buffer.
+    /// @param buffer A span of bytes containing the shader code.
+    /// @return The created VkShaderModule, or VK_NULL_HANDLE if creation failed.
+    ///
+    VkShaderModule Graphics::CreateShaderModule(gsl::span<std::uint8_t> buffer) {
+        if (buffer.empty()) {
+            spdlog::error("Shader buffer is empty");
+            return VK_NULL_HANDLE;
+        }
+
+        VkShaderModuleCreateInfo create_info = {};
+        create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        create_info.codeSize = buffer.size();
+        create_info.pCode = reinterpret_cast<const std::uint32_t*>(buffer.data());
+
+        VkShaderModule shader_module;
+        if (vkCreateShaderModule(logical_device_,
+            &create_info,
+            nullptr,
+            &shader_module) != VK_SUCCESS) {
+            spdlog::error("Failed to create shader module");
+            return VK_NULL_HANDLE;
+        }
+
+        return shader_module;
+    }
+
+    /// @brief Creates the render pass for the graphics pipeline.
+    /// @details This function sets up a single color attachment and a single subpass for the render pass. 
+    /// @note This function assumes that the surface format has already been selected and is stored in
+    /// `surface_format_`.
+    ///
+    void Graphics::CreateRenderPass() {
+
+        VkAttachmentDescription color_attachment = {};
+        color_attachment.format = surface_format_.format;
+        color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+        color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+        VkAttachmentReference color_attachment_ref = {};
+        color_attachment_ref.attachment = 0;
+        color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        VkSubpassDescription main_subpass = {};
+        main_subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        main_subpass.colorAttachmentCount = 1;
+        main_subpass.pColorAttachments = &color_attachment_ref;
+
+        VkRenderPassCreateInfo render_pass_info = {};
+        render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        render_pass_info.attachmentCount = 1;
+        render_pass_info.pAttachments = &color_attachment;
+        render_pass_info.subpassCount = 1;
+        render_pass_info.pSubpasses = &main_subpass;
+
+        if (vkCreateRenderPass(logical_device_,
+            &render_pass_info,
+            nullptr,
+            &render_pass_) != VK_SUCCESS) {
+            spdlog::error("Failed to create render pass");
+            std::exit(EXIT_FAILURE);
+        }
+    }
+
+
+#pragma endregion // GRAPHICS PIPELINE
 
 }  // namespace veng 

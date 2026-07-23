@@ -74,6 +74,13 @@ namespace veng {
         VkExtent2D swap_chain_extent_;
         VkPresentModeKHR swap_chain_present_mode_;
 
+        VkPipelineLayout pipeline_layout_ = VK_NULL_HANDLE;
+
+        VkPipeline graphics_pipeline_ = VK_NULL_HANDLE;
+
+        VkRenderPass render_pass_ = VK_NULL_HANDLE;
+
+
 
 // private methods
 //
@@ -157,6 +164,13 @@ namespace veng {
 
         void CreateImageViews();
 
+        void CreateGraphicsPipeline();
+
+        VkShaderModule CreateShaderModule(gsl::span<std::uint8_t> buffer);
+
+        void CreateRenderPass();
+
+        // Debug messenger setup
 
         void SetupDebugMessenger();
 

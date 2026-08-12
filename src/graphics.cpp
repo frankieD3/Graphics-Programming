@@ -213,6 +213,52 @@ namespace veng {
         // Order of destruction:
         // 1. Logical device                                                                                                    
         if (logical_device_ != VK_NULL_HANDLE) {
+            vkDeviceWaitIdle(logical_device_);
+
+            CleanupSwapChain();
+
+            if (still_rendering_fence_ != VK_NULL_HANDLE) {
+                vkDestroyFence(logical_device_,
+                               still_rendering_fence_,
+                               nullptr);
+            }
+            if (image_available_signal_ != VK_NULL_HANDLE) {
+                vkDestroySemaphore(logical_device_,
+                                   image_available_signal_,
+                                   nullptr);
+            }
+            if (render_finished_signal_ != VK_NULL_HANDLE) {
+                vkDestroySemaphore(logical_device_,
+                                   render_finished_signal_,
+                                   nullptr);
+            }
+
+            if (command_pool_ != VK_NULL_HANDLE) {
+                vkDestroyCommandPool(logical_device_,
+                                     command_pool_,
+                                     nullptr);
+            }
+
+            for (VkFramebuffer framebuffer : swap_chain_framebuffers_) {
+                vkDestroyFramebuffer(logical_device_,
+                                     framebuffer,
+                                     nullptr);
+            }
+            if (graphics_pipeline_ != VK_NULL_HANDLE) {
+                vkDestroyPipeline(logical_device_,
+                                  graphics_pipeline_,
+                                  nullptr);
+            }
+            if (pipeline_layout_ != VK_NULL_HANDLE) {
+                vkDestroyPipelineLayout(logical_device_,
+                                        pipeline_layout_,
+                                        nullptr);
+            }
+            if (render_pass_ != VK_NULL_HANDLE) {
+                vkDestroyRenderPass(logical_device_,
+                                    render_pass_,
+                                    nullptr);
+            }
             for (auto image_view : swap_chain_image_views_) {
                 vkDestroyImageView(logical_device_,
                                    image_view,

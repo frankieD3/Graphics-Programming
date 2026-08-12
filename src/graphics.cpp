@@ -649,7 +649,18 @@ namespace veng {
         swap_chain_create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         swap_chain_create_info.presentMode = swap_chain_present_mode_;
         swap_chain_create_info.preTransform = swap_chain_properties.capabilities.currentTransform;
-        swap_chain_create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        if ((swap_chain_properties.capabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR) != 0) {
+            swap_chain_create_info.compositeAlpha = VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
+        }
+        else if ((swap_chain_properties.capabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR) != 0) {
+            swap_chain_create_info.compositeAlpha = VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
+        }
+        else if ((swap_chain_properties.capabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR) != 0) {
+            swap_chain_create_info.compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+        }
+        else {
+            swap_chain_create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        }
         swap_chain_create_info.clipped = VK_TRUE;
         swap_chain_create_info.oldSwapchain = VK_NULL_HANDLE;
 
@@ -708,10 +719,10 @@ namespace veng {
 
         auto image_view_it = swap_chain_image_views_.begin();
 
-        for (std::size_t i = 0; i < swap_chain_images_.size(); ++i) {
+        for (VkImage image : swap_chain_images_) {
             VkImageViewCreateInfo create_info{};
             create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-            create_info.image = swap_chain_images_[i];
+            create_info.image = image;
             create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
             create_info.format = surface_format_.format;
             create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;

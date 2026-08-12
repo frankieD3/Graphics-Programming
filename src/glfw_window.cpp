@@ -6,10 +6,14 @@
 namespace veng {
 
     Window::Window(gsl::czstring title, glm::ivec2 size) {
+        //glfwWindowHint(GLFW_RESIZABLE,
+        //GLFW_FALSE);
         glfwWindowHint(GLFW_RESIZABLE,
-                       GLFW_FALSE);
+                       GLFW_TRUE);
         glfwWindowHint(GLFW_CLIENT_API,
                        GLFW_NO_API);
+        glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER,
+                   GLFW_TRUE);
         window_ = glfwCreateWindow(size.x,
                                    size.y,
                                    title,

@@ -6,6 +6,8 @@
 #include <iostream>
 #include <optional>
 
+#define kNummberOfFramesInFlight 2
+
 namespace veng {
     
 
@@ -14,6 +16,13 @@ namespace veng {
         Graphics(gsl::not_null<Window*> window);
 
         ~Graphics();
+
+        // rendering functions
+        bool BeginFrame();
+
+        void RenderTriangle();
+
+        void EndFrame();
 
 
       private:
@@ -69,10 +78,31 @@ namespace veng {
 
         std::vector<VkImageView> swap_chain_image_views_;
 
-        VkSurfaceFormatKHR surface_format_;
-        VkFormat swap_chain_image_format_;
-        VkExtent2D swap_chain_extent_;
-        VkPresentModeKHR swap_chain_present_mode_;
+        VkSurfaceFormatKHR surface_format_ = {};
+        VkFormat swap_chain_image_format_ = {};
+        VkExtent2D swap_chain_extent_ = {};
+        VkPresentModeKHR swap_chain_present_mode_ = {};
+
+        VkPipelineLayout pipeline_layout_ = VK_NULL_HANDLE;
+
+        VkPipeline graphics_pipeline_ = VK_NULL_HANDLE;
+
+        VkRenderPass render_pass_ = VK_NULL_HANDLE;
+
+        std::vector<VkFramebuffer> swap_chain_framebuffers_ = {};
+
+        VkCommandPool command_pool_ = VK_NULL_HANDLE;
+
+        VkCommandBuffer command_buffer_ = VK_NULL_HANDLE;
+
+        VkSemaphore image_available_signal_ = VK_NULL_HANDLE;
+
+        VkSemaphore render_finished_signal_ = VK_NULL_HANDLE;
+
+        VkFence still_rendering_fence_ = VK_NULL_HANDLE;
+
+        std::uint32_t current_image_index_ = 0;
+
 
 
 // private methods

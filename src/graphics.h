@@ -155,8 +155,38 @@ namespace veng {
 
         std::uint32_t ChooseImageCount(const VkSurfaceCapabilitiesKHR& capabilities);
 
+        VkViewport GetViewport();
+
+        VkRect2D GetScissor();
+
+        void CreateSignals();
+
         void CreateImageViews();
 
+        void CreateGraphicsPipeline();
+
+        VkShaderModule CreateShaderModule(gsl::span<std::uint8_t> buffer);
+
+        void CreateRenderPass();
+
+        void CreateFramebuffers();
+
+        void CreateCommandPool();
+
+        void CreateCommandBuffer();
+
+        // Rendering
+        //
+        void BeginCommands();
+
+        void EndCommands();
+
+        void RecreateSwapChain();
+
+        void CleanupSwapChain();
+
+
+        // Debug messenger setup
 
         void SetupDebugMessenger();
 

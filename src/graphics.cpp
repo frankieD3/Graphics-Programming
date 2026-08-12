@@ -620,9 +620,9 @@ namespace veng {
         }
 
         // Choose the best surface format, present mode, and extent
-        VkSurfaceFormatKHR surface_format_ = ChooseSwapSurfaceFormat(swap_chain_properties.formats);
-        VkPresentModeKHR swap_chain_present_mode_ = ChooseSwapPresentMode(swap_chain_properties.present_modes);
-        VkExtent2D swap_chain_extent_ = ChooseSwapExtent(swap_chain_properties.capabilities);
+        surface_format_ = ChooseSwapSurfaceFormat(swap_chain_properties.formats);
+        swap_chain_present_mode_ = ChooseSwapPresentMode(swap_chain_properties.present_modes);
+        swap_chain_extent_ = ChooseSwapExtent(swap_chain_properties.capabilities);
         std::uint32_t image_count = ChooseImageCount(swap_chain_properties.capabilities);
 
         // Setup the swap chain
@@ -727,27 +727,19 @@ namespace veng {
             VkResult result = vkCreateImageView(logical_device_,
                                                 &create_info,
                                                 nullptr,
-                                                &image_view_it[i]);
+                                                &*image_view_it);
             if (result != VK_SUCCESS) {
-                spdlog::error("Failed to create image view for swap chain image {}", i);
+                spdlog::error("Failed to create image view for swap chain image");
                 std::exit(EXIT_FAILURE);
             }
-            std::next(image_view_it);
+            image_view_it = std::next(image_view_it, 1);
         }
     }
 
     // Helper functions for swap chain selection
     //
-    std::uint32_t Graphics::ChooseImageCount(const VkSurfaceCapabilitiesKHR& capabilities)
-    {
-        std::uint32_t image_count = capabilities.minImageCount + 1;
-        if (capabilities.maxImageCount > 0 && image_count > capabilities.maxImageCount) {
-            image_count = capabilities.maxImageCount;
-        }
-        return image_count;
-    }
 
-    bool IsRgbaTypeFormat(VkSurfaceFormatKHR format_properties)
+    bool IsRgbaTypeFormat(const VkSurfaceFormatKHR& format_properties)
     {
 
         return format_properties.format == VK_FORMAT_R8G8B8A8_SRGB ||
@@ -755,9 +747,42 @@ namespace veng {
 
     }
 
-    bool IsSrgbColorSpace(VkSurfaceFormatKHR format_properties)
+    bool IsSrgbColorSpace(const VkSurfaceFormatKHR& format_properties)
     {
         return format_properties.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+    }
+
+    bool IsCorrectSwapSurfaceFormat(const VkSurfaceFormatKHR& format_properties)
+    {
+        return IsRgbaTypeFormat(format_properties) && IsSrgbColorSpace(format_properties);
+    }
+
+    VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::span<VkSurfaceFormatKHR>& available_formats) {
+
+        if (available_formats.size() == 1 && available_formats[0].format == VK_FORMAT_UNDEFINED) {
+            return { VK_FORMAT_B8G8R8A8_SRGB,
+                     VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+        }
+
+        auto it = std::find_if(available_formats.begin(), available_formats.end(),
+        IsCorrectSwapSurfaceFormat);
+
+        if (it != available_formats.end()) {
+            return *it;
+        }
+
+        // If the preferred format is not available, return the first available format
+        return available_formats[0];
+
+    }
+
+    std::uint32_t Graphics::ChooseImageCount(const VkSurfaceCapabilitiesKHR& capabilities)
+    {
+        std::uint32_t image_count = capabilities.minImageCount + 1;
+        if (capabilities.maxImageCount > 0 && image_count > capabilities.maxImageCount) {
+            image_count = capabilities.maxImageCount;
+        }
+        return image_count;
     }
 
     bool IsPreferredFormat(VkSurfaceFormatKHR format_properties)
@@ -778,6 +803,10 @@ namespace veng {
     {
         // Choose the best surface format from the available formats
         // Prefer VK_FORMAT_B8G8R8A8_SRGB with VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+        if (available_formats.size() == 1 && available_formats[0].format == VK_FORMAT_UNDEFINED) {
+            return { VK_FORMAT_B8G8R8A8_SRGB,
+                     VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+        }
 
         auto it = std::find_if(available_formats.begin(), available_formats.end(),
             [](const VkSurfaceFormatKHR& format) {
@@ -788,10 +817,6 @@ namespace veng {
             return *it;
         }
 
-        if (available_formats.size() == 1 && available_formats[0].format == VK_FORMAT_UNDEFINED) {
-            return { VK_FORMAT_B8G8R8A8_SRGB,
-                     VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
-        }
 
         // If the preferred format is not available, return the first available format
         return available_formats[0];

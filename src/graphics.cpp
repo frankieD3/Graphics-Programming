@@ -260,6 +260,13 @@ namespace veng {
         PickPhysicalDevice();
         CreateLogicalDeviceandQueues();
         CreateSwapChain();
+        CreateImageViews();
+        CreateRenderPass();
+        CreateGraphicsPipeline();
+        CreateFramebuffers();
+        CreateCommandPool();
+        CreateCommandBuffer();
+        CreateSignals();
 
     }
 

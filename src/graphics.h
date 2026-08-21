@@ -5,6 +5,8 @@
 #include <vulkan/vulkan.h>
 #include <iostream>
 #include <optional>
+#include "buffer_handle.h"
+#include "vertex.h"
 
 #define kNummberOfFramesInFlight 2
 
@@ -22,7 +24,23 @@ namespace veng {
 
         void RenderTriangle();
 
+        void RenderBuffer(BufferHandle handle, std::uint32_t vertex_count);
+
+        void RenderIndexBuffer(BufferHandle vertex_buffer,
+                               BufferHandle index_buffer,
+                               std::uint32_t index_count);
+
+        BufferHandle CreateIndexBuffer(gsl::span<std::uint32_t> indices);
+
         void EndFrame();
+
+
+        BufferHandle CreateVertexBuffer(gsl::span<Vertex> vertices);
+
+        void DestroyBuffer(const BufferHandle& buffer_handle);
+
+        // Getters
+        VkDevice GetLogicalDevice() const { return logical_device_; }
 
 
       private:
@@ -205,6 +223,9 @@ namespace veng {
 
         void CreateCommandBuffer();
 
+        std::uint32_t FindMemoryType(std::uint32_t type_filter,
+                                     VkMemoryPropertyFlags required_properties);
+
         // Rendering
         //
         void BeginCommands();
@@ -215,8 +236,16 @@ namespace veng {
 
         void CleanupSwapChain();
 
+        VkCommandBuffer BeginTransientCommandBuffer();
+
+        void EndTransientCommandBuffer(VkCommandBuffer command_buffer);
+
+        BufferHandle CreateBuffer(VkDeviceSize size,
+                                  VkBufferUsageFlags usage,
+                                  VkMemoryPropertyFlags properties);
 
         // Debug messenger setup
+
 
         void SetupDebugMessenger();
 

@@ -1539,4 +1539,332 @@ namespace veng {
     }
 #pragma endregion // FRAMEBUFFERS
 
+#pragma region BUFFERS
+
+    /// @brief Creates a vertex buffer and allocates memory for it.
+    /// @details This function takes a span of Vertex data, creates a Vulkan buffer with the
+    /// appropriate usage flags, allocates memory for the buffer, and copies the vertex data into the buffer.
+    /// @param vertices 
+    /// @return The function returns a BufferHandle, which contains the VkBuffer and VkDevice
+    BufferHandle Graphics::CreateVertexBuffer(gsl::span<Vertex> vertices)
+    {
+        // | 1 | Create a Vulkan buffer for the vertex data
+        //
+        VkDeviceSize buffer_size = vertices.size_bytes();
+        BufferHandle staging_handle = CreateBuffer(buffer_size,
+                                                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+                                                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+
+        // | 2 | Map the buffer memory and copy the vertex data into it
+        //
+        void* data;
+        vkMapMemory(logical_device_,
+                    staging_handle.memory,
+                    0,
+                    buffer_size,
+                    0,
+                    &data);
+
+        std::memcpy(data,
+                    vertices.data(),
+                    buffer_size);
+
+        // | 3 | Unmap the buffer memory after copying the data
+        //
+        vkUnmapMemory(logical_device_,
+                      staging_handle.memory);
+
+        BufferHandle gpu_handle = CreateBuffer(buffer_size,
+                                                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+                                                VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+        VkCommandBuffer transient_commands = BeginTransientCommandBuffer();
+        VkBufferCopy copy_region{};
+        copy_region.srcOffset = 0;
+        copy_region.dstOffset = 0;
+        copy_region.size = buffer_size;
+        vkCmdCopyBuffer(transient_commands,
+                        staging_handle.buffer,
+                        gpu_handle.buffer,
+                        1,
+                        &copy_region);
+        EndTransientCommandBuffer(transient_commands);
+
+        DestroyBuffer(staging_handle);
+
+        return gpu_handle;
+
+    }
+    BufferHandle Graphics::CreateIndexBuffer(gsl::span<std::uint32_t> indices)
+    {
+
+        VkDeviceSize buffer_size = indices.size_bytes();
+        BufferHandle staging_handle = CreateBuffer(buffer_size,
+                                                   VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+                                                   VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+        void* data;
+        vkMapMemory(logical_device_,
+                    staging_handle.memory,
+                    0,
+                    buffer_size,
+                    0,
+                    &data);
+
+        std::memcpy(data,
+                    indices.data(),
+                    buffer_size);
+
+        vkUnmapMemory(logical_device_,
+                      staging_handle.memory);
+
+        BufferHandle gpu_handle = CreateBuffer(buffer_size,
+                                               VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+                                               VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+        VkCommandBuffer transient_commands = BeginTransientCommandBuffer();
+        VkBufferCopy copy_region{};
+        copy_region.srcOffset = 0;
+        copy_region.dstOffset = 0;
+        copy_region.size = buffer_size;
+        vkCmdCopyBuffer(transient_commands,
+                        staging_handle.buffer,
+                        gpu_handle.buffer,
+                        1,
+                        &copy_region);
+        EndTransientCommandBuffer(transient_commands);
+
+        DestroyBuffer(staging_handle);
+
+        return gpu_handle;
+    }
+
+
+    /// @brief  Destroys a buffer and frees its associated memory.
+    /// @details This function takes a BufferHandle, which contains the VkBuffer and VkDeviceMemory to be destroyed.
+    /// @details It first checks if the buffer is valid (not VK_NULL_HANDLE) and then calls vkDestroyBuffer and
+    /// vkFreeMemory to clean up the resources.
+    /// @param buffer_handle 
+    void Graphics::DestroyBuffer(const BufferHandle& buffer_handle)
+    {
+
+        if (buffer_handle.buffer != VK_NULL_HANDLE) {
+            vkDestroyBuffer(logical_device_,
+                            buffer_handle.buffer,
+                            nullptr);
+            vkFreeMemory(logical_device_,
+                         buffer_handle.memory,
+                         nullptr);
+        }
+
+    }
+
+    /// @brief  Finds a suitable memory type for a buffer or image based on the provided type bits filter and
+    /// required properties.
+    /// @details This function queries the physical device's memory properties and iterates through the available
+    /// memory types to find one that matches the specified criteria. It checks if the memory type is suitable 
+    /// based on the type bits filter and if it has the required property flags. If a suitable memory type
+    /// is found, its index is returned. If no suitable memory type is found, a runtime error is thrown.
+    /// @details This function is typically used when creating buffers or images in Vulkan, as it helps ensure that the allocated memory meets the requirements for the intended usage. 
+    /// @param type_bits_filter 
+    /// @param required_properties 
+    /// @return 
+    std::uint32_t Graphics::FindMemoryType(std::uint32_t type_bits_filter,
+                                           VkMemoryPropertyFlags required_properties)
+    {
+
+        // | 1 | Query the physical device's memory properties
+        //
+        VkPhysicalDeviceMemoryProperties mem_properties;
+        vkGetPhysicalDeviceMemoryProperties(physical_device_,
+                                            &mem_properties);
+
+        gsl::span<VkMemoryType> memory_types(mem_properties.memoryTypes,
+                                mem_properties.memoryTypeCount);
+
+
+        // | 2 | Iterate through the available memory types to find a suitable one
+        //
+        for (std::uint32_t i = 0; i < memory_types.size(); ++i) {
+            bool passes_filter = type_bits_filter & (1 << i);
+            bool has_property_flags = memory_types[i].propertyFlags & required_properties;
+
+            if (passes_filter && has_property_flags) {
+                return i;
+            }
+        }
+        throw std::runtime_error("Failed to find suitable memory type");
+    }
+
+    void Graphics::RenderBuffer(BufferHandle handle, std::uint32_t vertex_count)
+    {
+        VkDeviceSize offsets[] = { 0 };
+
+        vkCmdBindVertexBuffers(command_buffer_,
+                               0,
+                               1,
+                               &handle.buffer,
+                               offsets
+        );
+
+        vkCmdDraw(command_buffer_,
+                  vertex_count,
+                  1,
+                  0,
+                  0);
+    }
+
+    VkCommandBuffer Graphics::BeginTransientCommandBuffer()
+    {
+        // Implementation here
+        VkCommandBufferAllocateInfo alloc_info = {};
+        alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        alloc_info.commandPool = command_pool_;
+        alloc_info.commandBufferCount = 1;
+
+        VkCommandBuffer command_buffer;
+        if (vkAllocateCommandBuffers(logical_device_,
+            &alloc_info,
+            &command_buffer) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to allocate transient command buffer");
+        }
+
+        VkCommandBufferBeginInfo begin_info = {};
+        begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+        if (vkBeginCommandBuffer(command_buffer,
+            &begin_info) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to begin transient command buffer");
+        }
+
+        return command_buffer;
+    }
+
+    /// @brief Renders an indexed buffer.
+    /// @param vertex_buffer The vertex buffer handle.
+    /// @param index_buffer The index buffer handle.
+    /// @param index_count The number of indices to draw.
+    void Graphics::RenderIndexBuffer(BufferHandle vertex_buffer,
+                           BufferHandle index_buffer,
+                           std::uint32_t index_count)
+    {
+
+        VkDeviceSize offsets[] = { 0 };
+
+        vkCmdBindVertexBuffers(command_buffer_,
+                               0,
+                               1,
+                               &vertex_buffer.buffer,
+                               offsets
+        );
+
+        vkCmdBindIndexBuffer(command_buffer_,
+                             index_buffer.buffer,
+                             0,
+                             VK_INDEX_TYPE_UINT32);
+
+        vkCmdDrawIndexed(command_buffer_,
+                         index_count,
+                         1,
+                         0,
+                         0,
+                         0);
+    }
+
+
+    void Graphics::EndTransientCommandBuffer(VkCommandBuffer command_buffer)
+    {
+
+        if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to end transient command buffer");
+        }
+
+        VkSubmitInfo submit_info = {};
+        submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submit_info.commandBufferCount = 1;
+        submit_info.pCommandBuffers = &command_buffer;
+
+        if (vkQueueSubmit(graphics_queue_,
+            1,
+            &submit_info,
+            VK_NULL_HANDLE) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to submit transient command buffer");
+        }
+
+        vkQueueWaitIdle(graphics_queue_);
+
+        vkFreeCommandBuffers(logical_device_,
+                             command_pool_,
+                             1,
+                             &command_buffer);
+    }
+
+
+    BufferHandle Graphics::CreateBuffer(VkDeviceSize size,
+                                         VkBufferUsageFlags usage,
+                                         VkMemoryPropertyFlags properties)
+    {
+
+        BufferHandle buffer_handle = {};
+
+        VkBufferCreateInfo buffer_info = {};
+        buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        buffer_info.size = size;
+        buffer_info.usage = usage;
+        buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        if (vkCreateBuffer(logical_device_,
+            &buffer_info,
+            nullptr,
+            &buffer_handle.buffer) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to create buffer");
+        }
+
+        VkMemoryRequirements mem_requirements;
+        vkGetBufferMemoryRequirements(logical_device_,
+                                      buffer_handle.buffer,
+                                      &mem_requirements);
+
+        std::uint32_t memory_type_index = FindMemoryType(mem_requirements.memoryTypeBits, properties);
+
+        VkMemoryAllocateInfo alloc_info = {};
+        alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        alloc_info.allocationSize = mem_requirements.size;
+        alloc_info.memoryTypeIndex = memory_type_index;
+
+        if (vkAllocateMemory(logical_device_,
+            &alloc_info,
+            nullptr,
+            &buffer_handle.memory) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to allocate buffer memory");
+        }
+
+        vkBindBufferMemory(logical_device_,
+                           buffer_handle.buffer,
+                           buffer_handle.memory,
+                           0);
+
+        return buffer_handle;
+
+    }
+
+
+
+
+#pragma endregion // BUFFERS
 }

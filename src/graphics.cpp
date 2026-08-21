@@ -5,6 +5,7 @@
 #include <vulkan/vulkan.h>
 #include "spdlog/spdlog.h"
 #include <set>
+#include "vertex.h"
 
 #pragma region VK_FUNCTION_EXT_IMPL
 

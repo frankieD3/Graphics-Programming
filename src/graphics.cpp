@@ -137,67 +137,9 @@ namespace veng {
 
 #pragma endregion // VALIDATION_LAYERS
 
-#pragma region INSTANCE_AND_EXTENSIONS
-
-    gsl::span<gsl::czstring> Graphics::GetSuggestedInstanceExtensions() {
-        std::uint32_t glfw_extension_count = 0;
-        gsl::czstring* glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
-        return { glfw_extensions, glfw_extension_count };
-    }
 
 
-    std::vector<VkExtensionProperties> Graphics::GetSupportedInstanceExtensions() {
-        std::uint32_t glfw_extension_count = 0;
-
-        vkEnumerateInstanceExtensionProperties(nullptr,
-            &glfw_extension_count,
-            nullptr);
-
-        if (glfw_extension_count == 0) {
-            return {};
-        }
-
-        std::vector<VkExtensionProperties> glfw_extensions(glfw_extension_count);
-        vkEnumerateInstanceExtensionProperties(nullptr,
-            &glfw_extension_count,
-            glfw_extensions.data());
-        return glfw_extensions;
-    }
-
-    bool Graphics::ExtensionMatchesName(gsl::czstring extension_name,
-        const VkExtensionProperties& extension_properties) {
-        return veng::streq(extension_name, extension_properties.extensionName);
-    }
-
-    bool Graphics::IsExtensionSupported(gsl::span<VkExtensionProperties> extension_properties,
-        gsl::czstring extension_name) {
-
-        return std::any_of(
-            extension_properties.begin(), extension_properties.end(),
-            std::bind_front(ExtensionMatchesName, extension_name));
-    }
-
-    std::vector<gsl::czstring> Graphics::GetRequiredInstanceExtensions() {
-
-        gsl::span<gsl::czstring> suggested_extensions = GetSuggestedInstanceExtensions();
-        std::vector<gsl::czstring> required_extensions(suggested_extensions.size());
-        std::copy(suggested_extensions.begin(), suggested_extensions.end(), required_extensions.begin());
-
-        if (validation_enabled_) {
-            required_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        }
-
-        if (!AreAllExtensionsSupported(required_extensions)) {
-            std::exit(EXIT_FAILURE);
-        }
-
-        return required_extensions;
-    }
-
-
-
-#pragma endregion // INSTANCE_AND_EXTENSIONS
-
+#pragma region CLASS_CONSTRUCTION and DESTRUCTION
     // Constructor and destructor
     //
     Graphics::Graphics(gsl::not_null<Window*> window) : window_(window) {
@@ -371,6 +313,70 @@ namespace veng {
             std::exit(EXIT_FAILURE);
         }
     }
+
+
+#pragma endregion // CLASS_CONSTRUCTION and DESTRUCTION
+
+#pragma region INSTANCE_AND_EXTENSIONS
+
+    gsl::span<gsl::czstring> Graphics::GetSuggestedInstanceExtensions() {
+        std::uint32_t glfw_extension_count = 0;
+        gsl::czstring* glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
+        return { glfw_extensions, glfw_extension_count };
+    }
+
+
+    std::vector<VkExtensionProperties> Graphics::GetSupportedInstanceExtensions() {
+        std::uint32_t glfw_extension_count = 0;
+
+        vkEnumerateInstanceExtensionProperties(nullptr,
+            &glfw_extension_count,
+            nullptr);
+
+        if (glfw_extension_count == 0) {
+            return {};
+        }
+
+        std::vector<VkExtensionProperties> glfw_extensions(glfw_extension_count);
+        vkEnumerateInstanceExtensionProperties(nullptr,
+            &glfw_extension_count,
+            glfw_extensions.data());
+        return glfw_extensions;
+    }
+
+    bool Graphics::ExtensionMatchesName(gsl::czstring extension_name,
+        const VkExtensionProperties& extension_properties) {
+        return veng::streq(extension_name, extension_properties.extensionName);
+    }
+
+    bool Graphics::IsExtensionSupported(gsl::span<VkExtensionProperties> extension_properties,
+        gsl::czstring extension_name) {
+
+        return std::any_of(
+            extension_properties.begin(), extension_properties.end(),
+            std::bind_front(ExtensionMatchesName, extension_name));
+    }
+
+    std::vector<gsl::czstring> Graphics::GetRequiredInstanceExtensions() {
+
+        gsl::span<gsl::czstring> suggested_extensions = GetSuggestedInstanceExtensions();
+        std::vector<gsl::czstring> required_extensions(suggested_extensions.size());
+        std::copy(suggested_extensions.begin(), suggested_extensions.end(), required_extensions.begin());
+
+        if (validation_enabled_) {
+            required_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        }
+
+        if (!AreAllExtensionsSupported(required_extensions)) {
+            std::exit(EXIT_FAILURE);
+        }
+
+        return required_extensions;
+    }
+
+
+
+#pragma endregion // INSTANCE_AND_EXTENSIONS
 
 
 #pragma region DEVICE_AND_QUEUES
